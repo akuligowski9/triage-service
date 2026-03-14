@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Triage Workbench</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 16px; color: #f0f6fc; }
+    .controls { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+    .controls select, .controls button { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+    .controls button:hover { background: #30363d; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #30363d; color: #8b949e; font-weight: 600; }
+    td { padding: 8px 12px; border-bottom: 1px solid #21262d; vertical-align: top; }
+    tr:hover { background: #161b22; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge-pending { background: #1f2937; color: #9ca3af; }
+    .badge-triaged { background: #1c2333; color: #58a6ff; }
+    .badge-sent { background: #0d2818; color: #3fb950; }
+    .badge-failed { background: #2d1315; color: #f85149; }
+    .severity-critical { color: #f85149; font-weight: 700; }
+    .severity-high { color: #db6d28; font-weight: 600; }
+    .severity-medium { color: #d29922; }
+    .severity-low { color: #8b949e; }
+    .btn-approve { background: #238636; color: #fff; border: none; padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-approve:hover { background: #2ea043; }
+    .btn-approve:disabled { opacity: 0.4; cursor: not-allowed; }
+    .source-type { font-family: monospace; font-size: 11px; color: #8b949e; }
+    .triage-title { color: #f0f6fc; font-weight: 500; }
+    .confidence { font-family: monospace; font-size: 11px; }
+    .labels { display: flex; gap: 4px; flex-wrap: wrap; }
+    .label { background: #1c2333; color: #58a6ff; padding: 1px 6px; border-radius: 10px; font-size: 10px; }
+    .empty { text-align: center; padding: 40px; color: #484f58; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #238636; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; display: none; z-index: 100; }
+    .toast.error { background: #da3633; }
+  </style>
+</head>
+<body>
+  <h1>Triage Workbench</h1>
+  <div class="controls">
+    <select id="statusFilter">
+      <option value="">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="triaged">Triaged</option>
+      <option value="sent">Sent</option>
+      <option value="failed">Failed</option>
+    </select>
+    <button onclick="loadEvents()">Refresh</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Source</th>
+        <th>Project</th>
+        <th>Message</th>
+        <th>Severity</th>
+        <th>Triage Title</th>
+        <th>Labels</th>
+        <th>Confidence</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="eventsBody">
+      <tr><td colspan="9" class="empty">Loading...</td></tr>
+    </tbody>
+  </table>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API = '/api';
+
+    async function loadEvents() {
+      const status = document.getElementById('statusFilter').value;
+      const url = status ? `${API}/events?status=${status}` : `${API}/events`;
+      try {
+        const res = await fetch(url);
+        const events = await res.json();
+        renderEvents(events);
+      } catch (err) {
+        showToast('Failed to load events', true);
+      }
+    }
+
+    function renderEvents(events) {
+      const tbody = document.getElementById('eventsBody');
+      if (!events.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">No events found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = events.map(ev => {
+        const tr = ev.triageResult;
+        return `<tr>
+          <td><span class="badge badge-${ev.status}">${ev.status}</span></td>
+          <td><span class="source-type">${ev.sourceType}</span></td>
+          <td>${ev.project}</td>
+          <td>${escapeHtml(ev.message.substring(0, 80))}${ev.message.length > 80 ? '...' : ''}</td>
+          <td>${tr ? `<span class="severity-${tr.severity}">${tr.severity}</span>` : '—'}</td>
+          <td>${tr ? `<span class="triage-title">${escapeHtml(tr.title)}</span>` : '—'}</td>
+          <td>${tr ? `<div class="labels">${tr.labels.map(l => `<span class="label">${escapeHtml(l)}</span>`).join('')}</div>` : '—'}</td>
+          <td>${tr ? `<span class="confidence">${(tr.confidence * 100).toFixed(0)}%</span>` : '—'}</td>
+          <td>${ev.status === 'triaged' ? `<button class="btn-approve" onclick="approveEvent('${ev.id}', this)">Approve</button>` : ''}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    async function approveEvent(id, btn) {
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        const res = await fetch(`${API}/events/${id}/approve`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Issue #${data.issueNumber} created`);
+          loadEvents();
+        } else {
+          showToast(data.error || 'Approval failed', true);
+          btn.disabled = false;
+          btn.textContent = 'Approve';
+        }
+      } catch (err) {
+        showToast('Network error', true);
+        btn.disabled = false;
+        btn.textContent = 'Approve';
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = isError ? 'toast error' : 'toast';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.getElementById('statusFilter').addEventListener('change', loadEvents);
+    loadEvents();
+    setInterval(loadEvents, 10000);
+  </script>
+</body>
+</html>

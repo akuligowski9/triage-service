@@ -27,7 +27,7 @@ Initialize the TypeScript project with Koa, Docker Compose, and all core depende
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Critical
 - **Type:** Maintenance
 - **Assignee:** Unassigned
@@ -52,7 +52,7 @@ Set up Knex.js with migration support and create the two core tables: `events` a
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Critical
 - **Type:** Maintenance
 - **Assignee:** Unassigned
@@ -79,7 +79,7 @@ Define the core domain types and port interfaces that the entire application dep
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Critical
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -106,7 +106,7 @@ Build the `POST /api/events` endpoint that validates incoming events with Zod, s
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -132,7 +132,7 @@ Set up BullMQ with Redis connection, create the `triage-jobs` queue, and build t
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -157,7 +157,7 @@ Implement the `TriageEnginePort` using LangChain.js. Uses `ChatPromptTemplate` f
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -181,7 +181,7 @@ Connect the worker (TRG-005) to the LangChain triage engine (TRG-006). When a jo
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -204,7 +204,7 @@ Build the `GET /api/events` endpoint that returns events with their triage resul
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -228,7 +228,7 @@ Implement the `IssueTrackerPort` using Octokit to create real GitHub Issues. Tak
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -252,7 +252,7 @@ Build the `POST /api/events/:id/approve` endpoint that takes a triaged event, co
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** High
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -279,7 +279,7 @@ Build a minimal static HTML dashboard served by Koa at `/dashboard`. Shows the t
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Medium
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -325,7 +325,7 @@ Build a `GET /api/health` endpoint that checks Postgres and Redis connectivity. 
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Medium
 - **Type:** Feature
 - **Assignee:** Unassigned
@@ -349,7 +349,7 @@ Write unit tests for the three core use cases using mock port implementations. T
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Medium
 - **Type:** Maintenance
 - **Assignee:** Unassigned
@@ -374,7 +374,7 @@ Write a README that explains the project, architecture decisions, setup instruct
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Medium
 - **Type:** Maintenance
 - **Assignee:** Unassigned
@@ -449,4 +449,17 @@ One integration test that exercises the full flow: POST an event, verify it's st
 
 ## Done
 
-(none yet)
+- **TRG-001**: Project Scaffold
+- **TRG-002**: Database Migrations
+- **TRG-003**: Domain Models and Port Interfaces
+- **TRG-004**: Event Intake Endpoint
+- **TRG-005**: BullMQ Queue and Worker Scaffold
+- **TRG-006**: LangChain Triage Engine Adapter
+- **TRG-007**: Worker Triage Processing
+- **TRG-008**: Event Listing Endpoint
+- **TRG-009**: GitHub Issues Adapter
+- **TRG-010**: Approve Endpoint
+- **TRG-011**: Triage Dashboard
+- **TRG-013**: Health Endpoint
+- **TRG-014**: Unit Tests
+- **TRG-015**: README with Architecture Docs

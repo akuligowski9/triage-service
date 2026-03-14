@@ -4,6 +4,8 @@ import type { IngestEvent } from '../../../application/ingest-event.js';
 import type { ListEvents } from '../../../application/list-events.js';
 import type { ApproveIssue } from '../../../application/approve-issue.js';
 import type { EventStatus } from '../../../domain/models/event.js';
+import type { Knex } from 'knex';
+import type { Redis } from 'ioredis';
 
 const eventInputSchema = z.object({
   sourceType: z.enum(['application_error', 'validation_warning', 'developer_note']),
@@ -19,12 +21,31 @@ export function createRouter(deps: {
   ingestEvent: IngestEvent;
   listEvents: ListEvents;
   approveIssue: ApproveIssue;
+  db: Knex;
+  redis: Redis;
 }): Router {
   const router = new Router({ prefix: '/api' });
 
   // Health
   router.get('/health', async (ctx) => {
-    ctx.body = { api: 'ok' };
+    let pgStatus = 'ok';
+    let redisStatus = 'ok';
+
+    try {
+      await deps.db.raw('SELECT 1');
+    } catch {
+      pgStatus = 'down';
+    }
+
+    try {
+      await deps.redis.ping();
+    } catch {
+      redisStatus = 'down';
+    }
+
+    const allOk = pgStatus === 'ok' && redisStatus === 'ok';
+    ctx.status = allOk ? 200 : 503;
+    ctx.body = { api: 'ok', postgres: pgStatus, redis: redisStatus };
   });
 
   // Event intake

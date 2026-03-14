@@ -2,6 +2,9 @@ import 'dotenv/config';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
+import serve from 'koa-static';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import knex from 'knex';
 import { loadConfig } from './config/index.js';
 import { PostgresEventStore } from './adapters/outbound/postgres/event-store.adapter.js';
@@ -16,6 +19,7 @@ import { ProcessTriage } from './application/process-triage.js';
 import { createTriageWorker } from './worker/triage.worker.js';
 import { GitHubIssueAdapter } from './adapters/outbound/github/issue-tracker.adapter.js';
 import { ApproveIssue } from './application/approve-issue.js';
+import { Redis as IORedis } from 'ioredis';
 
 const config = loadConfig();
 
@@ -24,6 +28,9 @@ const db = knex({
   client: 'pg',
   connection: config.DATABASE_URL,
 });
+
+// Redis (shared connection for health checks)
+const redis = new IORedis(config.REDIS_URL);
 
 // Adapters
 const eventStore = new PostgresEventStore(db);
@@ -61,9 +68,20 @@ app.use(errorHandler);
 app.use(cors());
 app.use(bodyParser());
 
-const router = createRouter({ ingestEvent, listEvents, approveIssue });
+const router = createRouter({ ingestEvent, listEvents, approveIssue, db, redis });
 app.use(router.routes());
 app.use(router.allowedMethods());
+
+// Dashboard — serve static files at /dashboard
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const dashboardPath = join(__dirname, 'adapters/inbound/dashboard/public');
+app.use(async (ctx, next) => {
+  if (ctx.path.startsWith('/dashboard')) {
+    ctx.path = ctx.path.replace('/dashboard', '') || '/index.html';
+    return serve(dashboardPath)(ctx, next);
+  }
+  return next();
+});
 
 app.listen(config.PORT, () => {
   console.log(`triage-service listening on :${config.PORT}`);

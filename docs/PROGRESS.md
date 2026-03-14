@@ -30,3 +30,38 @@ Full tech spec written and reviewed by both Claude and ChatGPT. Stored at `/User
 - Created INSTRUCTIONS.md, BACKLOG.md, PROGRESS.md, CLAUDE.md
 - 17 backlog items scoped (3 Critical, 7 High, 5 Medium, 2 Low)
 - Created private GitHub repo at `akuligowski9/triage-service`
+
+---
+
+## 2026-03-14 — Full Pipeline Implementation (Session 1 cont., TRG-001 through TRG-015)
+
+### Build Summary
+
+Implemented the complete triage service pipeline in one session:
+
+- **Scaffold** (TRG-001): Koa 3, TypeScript strict, Docker Compose with Postgres 16 + Redis 7, multi-stage Dockerfile
+- **Database** (TRG-002): Knex migrations for `events` and `triage_results` tables
+- **Domain** (TRG-003): 3 models + 4 port interfaces, zero framework imports
+- **Intake** (TRG-004): `POST /api/events` with Zod validation, returns 202
+- **Queue** (TRG-005): BullMQ with concurrency 3, exponential backoff, rate limiting
+- **LangChain** (TRG-006): ~40 lines, `withStructuredOutput` + Zod schema, behind `TriageEnginePort`
+- **Worker** (TRG-007): Connects queue → LangChain → Postgres, updates event status
+- **Listing** (TRG-008): `GET /api/events` with status filtering and triage result join
+- **GitHub** (TRG-009): Octokit adapter implementing `IssueTrackerPort`
+- **Approve** (TRG-010): `POST /api/events/:id/approve`, validates status before creating issue
+- **Dashboard** (TRG-011): Static HTML triage workbench with approve button, auto-refresh
+- **Health** (TRG-013): Checks Postgres + Redis connectivity, returns 503 if down
+- **Tests** (TRG-014): 8 unit tests across 3 use cases, all with mock ports
+- **README** (TRG-015): Architecture diagram, setup guide, demo flow
+
+### Issues Encountered
+
+- Koa 2 incompatible with Node 22 (`is-generator-function` error) — upgraded to Koa 3
+- Port 5433 already in use — switched Postgres to 5434
+- Knex types use `string()` not `varchar()` — fixed in migrations
+
+### Remaining
+
+- TRG-012: Project-bridge integration (Python side)
+- TRG-016: Structured logging (Low)
+- TRG-017: Integration test (Low)
