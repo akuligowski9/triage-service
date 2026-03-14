@@ -303,11 +303,12 @@ Add `triage_client.py` to project-bridge that emits events to the triage service
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Medium
 - **Type:** Feature
 - **Assignee:** Unassigned
 - **GitHub Issue:** No
+- **Session Notes:** Fixed Zod datetime validation to accept Python's +00:00 offset format. Hooked into github_analyzer, ai_context, and validation warning paths.
 
 ---
 
@@ -462,4 +463,5 @@ One integration test that exercises the full flow: POST an event, verify it's st
 - **TRG-011**: Triage Dashboard
 - **TRG-013**: Health Endpoint
 - **TRG-014**: Unit Tests
+- **TRG-012**: Project-Bridge Integration
 - **TRG-015**: README with Architecture Docs

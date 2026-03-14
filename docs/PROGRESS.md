@@ -62,6 +62,27 @@ Implemented the complete triage service pipeline in one session:
 
 ### Remaining
 
-- TRG-012: Project-bridge integration (Python side)
 - TRG-016: Structured logging (Low)
 - TRG-017: Integration test (Low)
+
+---
+
+## 2026-03-14 — Project-Bridge Integration (Session 1 cont., TRG-012)
+
+### What was done
+
+- Created `engine/projectbridge/triage_client.py` with `emit_triage_event()`, `emit_pipeline_error()`, and `emit_validation_warning()` convenience functions
+- Hooked into 3 locations in `orchestrator.py`:
+  - `github_analyzer` error path
+  - `ai_context` error path
+  - Unauthenticated GitHub access warning
+- Fixed Zod `datetime()` validation in triage-service to accept Python's `+00:00` offset format (was rejecting non-Z timestamps)
+- Verified end-to-end: Python client → Node service → stored in Postgres
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `engine/projectbridge/triage_client.py` | New — fire-and-forget event emitter |
+| `engine/projectbridge/orchestrator.py` | Added 3 triage event hooks |
+| `src/adapters/inbound/rest/router.ts` | Fixed datetime validation for offset format |
