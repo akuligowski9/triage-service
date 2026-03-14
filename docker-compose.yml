@@ -1,0 +1,48 @@
+services:
+  triage-service:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - DATABASE_URL=postgres://triage:triage@postgres:5432/triage
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - ISSUE_TRACKER=${ISSUE_TRACKER:-github}
+      - TARGET_REPO=${TARGET_REPO:-akuligowski9/project-bridge}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: triage
+      POSTGRES_PASSWORD: triage
+      POSTGRES_DB: triage
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U triage"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
