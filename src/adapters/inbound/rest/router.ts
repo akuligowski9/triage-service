@@ -14,7 +14,7 @@ const eventInputSchema = z.object({
   message: z.string().min(1),
   stackTrace: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
-  timestamp: z.string().datetime().optional(),
+  timestamp: z.string().datetime({ offset: true }).optional(),
 });
 
 export function createRouter(deps: {
