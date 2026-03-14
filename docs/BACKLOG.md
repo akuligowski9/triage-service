@@ -400,7 +400,7 @@ Add pino logger throughout the application for structured JSON logging. Log at i
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Low
 - **Type:** Enhancement
 - **Assignee:** Unassigned
@@ -422,7 +422,7 @@ One integration test that exercises the full flow: POST an event, verify it's st
 
 #### Metadata
 
-- **Status:** Planned
+- **Status:** Done
 - **Priority:** Low
 - **Type:** Maintenance
 - **Assignee:** Unassigned
@@ -465,3 +465,5 @@ One integration test that exercises the full flow: POST an event, verify it's st
 - **TRG-014**: Unit Tests
 - **TRG-012**: Project-Bridge Integration
 - **TRG-015**: README with Architecture Docs
+- **TRG-016**: Structured Logging
+- **TRG-017**: Integration Test
