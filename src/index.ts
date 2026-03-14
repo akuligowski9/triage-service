@@ -14,12 +14,14 @@ import { IngestEvent } from './application/ingest-event.js';
 import { ListEvents } from './application/list-events.js';
 import { createRouter } from './adapters/inbound/rest/router.js';
 import { errorHandler } from './adapters/inbound/rest/middleware/error-handler.js';
+import { requestLogger } from './adapters/inbound/rest/middleware/request-logger.js';
 import { LangChainTriageEngine } from './adapters/outbound/langchain/triage-engine.adapter.js';
 import { ProcessTriage } from './application/process-triage.js';
 import { createTriageWorker } from './worker/triage.worker.js';
 import { GitHubIssueAdapter } from './adapters/outbound/github/issue-tracker.adapter.js';
 import { ApproveIssue } from './application/approve-issue.js';
 import { Redis as IORedis } from 'ioredis';
+import logger from './logger.js';
 
 const config = loadConfig();
 
@@ -57,14 +59,15 @@ if (config.OPENAI_API_KEY) {
   const triageEngine = new LangChainTriageEngine();
   const processTriage = new ProcessTriage(eventStore, triageEngine, triageStore);
   createTriageWorker(config.REDIS_URL, processTriage);
-  console.log('triage worker started');
+  logger.info('triage worker started');
 } else {
-  console.warn('OPENAI_API_KEY not set — triage worker disabled');
+  logger.warn('OPENAI_API_KEY not set — triage worker disabled');
 }
 
 // App
 const app = new Koa();
 app.use(errorHandler);
+app.use(requestLogger);
 app.use(cors());
 app.use(bodyParser());
 
@@ -84,5 +87,5 @@ app.use(async (ctx, next) => {
 });
 
 app.listen(config.PORT, () => {
-  console.log(`triage-service listening on :${config.PORT}`);
+  logger.info(`triage-service listening on :${config.PORT}`);
 });

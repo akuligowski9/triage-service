@@ -1,5 +1,6 @@
 import type { Context, Next } from 'koa';
 import { ZodError } from 'zod';
+import logger from '../../../../logger.js';
 
 export async function errorHandler(ctx: Context, next: Next): Promise<void> {
   try {
@@ -18,7 +19,7 @@ export async function errorHandler(ctx: Context, next: Next): Promise<void> {
     }
 
     const message = err instanceof Error ? err.message : 'Internal server error';
-    console.error('Unhandled error:', err);
+    logger.error({ err }, 'unhandled error');
     ctx.status = 500;
     ctx.body = { error: message };
   }

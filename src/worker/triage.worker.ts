@@ -1,5 +1,6 @@
 import { Worker } from 'bullmq';
 import type { ProcessTriage } from '../application/process-triage.js';
+import logger from '../logger.js';
 
 export function createTriageWorker(
   redisUrl: string,
@@ -11,10 +12,13 @@ export function createTriageWorker(
     'triage-jobs',
     async (job) => {
       const { eventId } = job.data as { eventId: string };
-      console.log(`[worker] Processing triage for event ${eventId}`);
+      logger.info({ eventId }, 'processing triage for event');
 
       const result = await processTriage.execute(eventId);
-      console.log(`[worker] Triaged event ${eventId}: ${result.severity} ${result.issueType} — "${result.title}"`);
+      logger.info(
+        { eventId, severity: result.severity, issueType: result.issueType, title: result.title },
+        'triage complete',
+      );
     },
     {
       connection: {
@@ -30,11 +34,11 @@ export function createTriageWorker(
   );
 
   worker.on('failed', (job, err) => {
-    console.error(`[worker] Job ${job?.id} failed:`, err.message);
+    logger.error({ jobId: job?.id, err: err.message }, 'job failed');
   });
 
   worker.on('error', (err) => {
-    console.error('[worker] Worker error:', err.message);
+    logger.error({ err: err.message }, 'worker error');
   });
 
   return worker;
