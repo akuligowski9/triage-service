@@ -1,3 +1,7 @@
+/**
+ * PostgreSQL adapter for persisting and querying intake events.
+ * Maps between domain models and database rows (snake_case).
+ */
 import type { Knex } from 'knex';
 import type { EventStatus, IntakeEvent } from '../../../domain/models/event.js';
 import type { EventStorePort } from '../../../domain/ports/event-store.port.js';
@@ -13,6 +17,8 @@ interface EventRow {
   timestamp: Date;
   received_at: Date;
   status: string;
+  issue_url: string | null;
+  error_message: string | null;
   created_at: Date;
 }
 
@@ -28,6 +34,8 @@ function rowToEvent(row: EventRow): IntakeEvent {
     timestamp: row.timestamp.toISOString(),
     receivedAt: row.received_at.toISOString(),
     status: row.status as EventStatus,
+    issueUrl: row.issue_url ?? undefined,
+    errorMessage: row.error_message ?? undefined,
   };
 }
 
@@ -65,5 +73,13 @@ export class PostgresEventStore implements EventStorePort {
 
   async updateStatus(id: string, status: EventStatus): Promise<void> {
     await this.db('events').where({ id }).update({ status });
+  }
+
+  async setIssueUrl(id: string, url: string): Promise<void> {
+    await this.db('events').where({ id }).update({ issue_url: url });
+  }
+
+  async setError(id: string, message: string): Promise<void> {
+    await this.db('events').where({ id }).update({ status: 'failed', error_message: message });
   }
 }

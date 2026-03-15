@@ -9,6 +9,8 @@ function createMocks() {
     findById: vi.fn(),
     findAll: vi.fn(),
     updateStatus: vi.fn(),
+    setIssueUrl: vi.fn(),
+    setError: vi.fn(),
   };
   const triageQueue: TriageQueuePort = {
     enqueue: vi.fn().mockResolvedValue(undefined),

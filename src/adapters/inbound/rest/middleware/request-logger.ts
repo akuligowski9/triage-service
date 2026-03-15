@@ -1,3 +1,6 @@
+/**
+ * Koa middleware that logs each HTTP request with method, path, status, and duration.
+ */
 import type { Context, Next } from 'koa';
 import logger from '../../../../logger.js';
 

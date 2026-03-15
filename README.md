@@ -33,6 +33,7 @@ Every external dependency sits behind a port interface. The core domain has zero
 | Port                 | Adapter                    | Purpose                         |
 |----------------------|----------------------------|---------------------------------|
 | `EventStorePort`     | PostgresEventStore         | Persist intake events           |
+| `TriageStorePort`    | PostgresTriageStore        | Persist AI triage results       |
 | `TriageQueuePort`    | BullMQTriageQueue          | Async job processing            |
 | `TriageEnginePort`   | LangChainTriageEngine      | AI-powered classification       |
 | `IssueTrackerPort`   | GitHubIssueAdapter         | Create issues in GitHub         |
@@ -91,13 +92,17 @@ The dashboard is available at [http://localhost:4000/dashboard](http://localhost
 
 ### API Endpoints
 
-| Method | Path                        | Description                        |
-|--------|-----------------------------|------------------------------------|
-| POST   | `/api/events`               | Submit an event for triage         |
-| GET    | `/api/events`               | List events (filterable by status) |
-| GET    | `/api/events/:id`           | Get single event with triage result|
-| POST   | `/api/events/:id/approve`   | Approve and create GitHub issue    |
-| GET    | `/api/health`               | Health check (API + Postgres + Redis) |
+| Method | Path                        | Description                          |
+|--------|-----------------------------|--------------------------------------|
+| POST   | `/api/events`               | Submit an event for triage           |
+| GET    | `/api/events`               | List events (filterable by status)   |
+| GET    | `/api/events/:id`           | Get single event with triage result  |
+| PATCH  | `/api/events/:id/triage`    | Edit triage result before approval   |
+| POST   | `/api/events/:id/approve`   | Approve and create GitHub issue      |
+| POST   | `/api/events/:id/dismiss`   | Dismiss an event                     |
+| POST   | `/api/events/:id/retry`     | Retry a failed approval              |
+| GET    | `/api/labels`               | Fetch GitHub repo labels             |
+| GET    | `/api/health`               | Health check (API + Postgres + Redis)|
 
 ### Example: Submit an Event
 
@@ -116,10 +121,12 @@ curl -X POST http://localhost:4000/api/events \
 ## Demo Flow
 
 1. Trigger an error in project-bridge (or POST a sample event via curl)
-2. The triage worker picks it up and classifies it with LangChain
+2. The triage worker picks it up and classifies it with LangChain (OpenAI gpt-4o-mini)
 3. Open the dashboard at `/dashboard` to see the triage queue
-4. Review the AI-generated issue title, severity, and labels
-5. Click **Approve** to create a real GitHub issue on project-bridge
+4. Review the AI-generated title, severity, labels, reproduction steps, and acceptance criteria
+5. Optionally **edit** any field before approval
+6. Click **Approve** to create a real GitHub issue on project-bridge
+7. If approval fails (GitHub API error), the error is captured — click **Retry** to try again
 
 ## Testing
 
@@ -127,7 +134,7 @@ curl -X POST http://localhost:4000/api/events \
 npm test           # Run all unit tests
 ```
 
-8 unit tests covering the three core use cases (ingest, triage, approve) with mock port implementations — proving the hexagonal architecture is testable without real infrastructure.
+10 tests across 4 files: 9 unit tests covering the three core use cases (ingest, triage, approve — including error handling) with mock port implementations, plus 1 integration test with real Postgres and Redis. Proves the hexagonal architecture is testable without real infrastructure.
 
 ## Project Structure
 

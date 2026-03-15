@@ -1,3 +1,7 @@
+/**
+ * Application entry point. Wires together all adapters, use cases,
+ * and infrastructure, then starts the Koa HTTP server and BullMQ worker.
+ */
 import 'dotenv/config';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
@@ -54,7 +58,7 @@ const approveIssue = new ApproveIssue(
   config.TARGET_REPO,
 );
 
-// Worker (only starts if OPENAI_API_KEY is set)
+// Worker
 if (config.OPENAI_API_KEY) {
   const triageEngine = new LangChainTriageEngine();
   const processTriage = new ProcessTriage(eventStore, triageEngine, triageStore);
@@ -71,7 +75,8 @@ app.use(requestLogger);
 app.use(cors());
 app.use(bodyParser());
 
-const router = createRouter({ ingestEvent, listEvents, approveIssue, db, redis });
+const githubAdapter = issueTracker instanceof GitHubIssueAdapter ? issueTracker : null;
+const router = createRouter({ ingestEvent, listEvents, approveIssue, eventStore, triageStore, githubAdapter, targetRepo: config.TARGET_REPO, db, redis });
 app.use(router.routes());
 app.use(router.allowedMethods());
 

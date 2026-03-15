@@ -1,3 +1,6 @@
+/**
+ * BullMQ adapter for enqueuing triage jobs into Redis.
+ */
 import { Queue } from 'bullmq';
 import type { TriageQueuePort } from '../../../domain/ports/triage-queue.port.js';
 

@@ -1,13 +1,16 @@
+/**
+ * Use case: process an event through the AI triage engine and persist the result.
+ */
 import type { EventStorePort } from '../domain/ports/event-store.port.js';
 import type { TriageEnginePort } from '../domain/ports/triage-engine.port.js';
-import type { PostgresTriageStore } from '../adapters/outbound/postgres/triage-store.adapter.js';
+import type { TriageStorePort } from '../domain/ports/triage-store.port.js';
 import type { TriageResult } from '../domain/models/triage-result.js';
 
 export class ProcessTriage {
   constructor(
     private eventStore: EventStorePort,
     private triageEngine: TriageEnginePort,
-    private triageStore: PostgresTriageStore,
+    private triageStore: TriageStorePort,
   ) {}
 
   async execute(eventId: string): Promise<TriageResult> {

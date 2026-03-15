@@ -34,6 +34,8 @@ describe('ApproveIssue', () => {
       findById: vi.fn().mockResolvedValue(triagedEvent),
       findAll: vi.fn(),
       updateStatus: vi.fn().mockResolvedValue(undefined),
+      setIssueUrl: vi.fn().mockResolvedValue(undefined),
+      setError: vi.fn().mockResolvedValue(undefined),
     };
     const triageStore = {
       save: vi.fn(),
@@ -64,6 +66,8 @@ describe('ApproveIssue', () => {
       findById: vi.fn().mockResolvedValue(pendingEvent),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
+      setIssueUrl: vi.fn(),
+      setError: vi.fn(),
     };
     const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
     const issueTracker: IssueTrackerPort = { createIssue: vi.fn() };
@@ -73,12 +77,39 @@ describe('ApproveIssue', () => {
     await expect(useCase.execute('evt-456')).rejects.toThrow('Cannot approve');
   });
 
+  it('sets failed status with error message when GitHub API fails', async () => {
+    const eventStore: EventStorePort = {
+      save: vi.fn(),
+      findById: vi.fn().mockResolvedValue(triagedEvent),
+      findAll: vi.fn(),
+      updateStatus: vi.fn(),
+      setIssueUrl: vi.fn(),
+      setError: vi.fn().mockResolvedValue(undefined),
+    };
+    const triageStore = {
+      save: vi.fn(),
+      findByEventId: vi.fn().mockResolvedValue(mockTriageResult),
+      update: vi.fn(),
+    };
+    const issueTracker: IssueTrackerPort = {
+      createIssue: vi.fn().mockRejectedValue(new Error('Bad credentials')),
+    };
+
+    const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');
+
+    await expect(useCase.execute('evt-456')).rejects.toThrow('Bad credentials');
+    expect(eventStore.setError).toHaveBeenCalledWith('evt-456', 'Bad credentials');
+    expect(eventStore.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('throws if event not found', async () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(null),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
+      setIssueUrl: vi.fn(),
+      setError: vi.fn(),
     };
     const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
     const issueTracker: IssueTrackerPort = { createIssue: vi.fn() };

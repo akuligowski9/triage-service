@@ -1,3 +1,7 @@
+/**
+ * BullMQ worker that processes triage jobs from the Redis queue.
+ * Each job invokes the ProcessTriage use case for a single event.
+ */
 import { Worker } from 'bullmq';
 import type { ProcessTriage } from '../application/process-triage.js';
 import logger from '../logger.js';

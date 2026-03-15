@@ -1,7 +1,10 @@
+/**
+ * Use case: list events with their associated triage results.
+ */
 import type { EventStatus, IntakeEvent } from '../domain/models/event.js';
 import type { EventStorePort } from '../domain/ports/event-store.port.js';
+import type { TriageStorePort } from '../domain/ports/triage-store.port.js';
 import type { TriageResult } from '../domain/models/triage-result.js';
-import type { PostgresTriageStore } from '../adapters/outbound/postgres/triage-store.adapter.js';
 
 export interface EventWithTriage extends IntakeEvent {
   triageResult?: TriageResult;
@@ -10,7 +13,7 @@ export interface EventWithTriage extends IntakeEvent {
 export class ListEvents {
   constructor(
     private eventStore: EventStorePort,
-    private triageStore: PostgresTriageStore,
+    private triageStore: TriageStorePort,
   ) {}
 
   async execute(status?: EventStatus): Promise<EventWithTriage[]> {

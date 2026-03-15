@@ -1,3 +1,6 @@
+/**
+ * GitHub adapter for creating issues and fetching labels via the Octokit SDK.
+ */
 import { Octokit } from '@octokit/rest';
 import type { IssueTrackerPort } from '../../../domain/ports/issue-tracker.port.js';
 import type { Issue } from '../../../domain/models/issue.js';
@@ -21,5 +24,11 @@ export class GitHubIssueAdapter implements IssueTrackerPort {
     });
 
     return { url: data.html_url, number: data.number };
+  }
+
+  async listLabels(repository: string): Promise<{ name: string; color: string }[]> {
+    const [owner, repo] = repository.split('/');
+    const { data } = await this.client.issues.listLabelsForRepo({ owner, repo, per_page: 100 });
+    return data.map(l => ({ name: l.name, color: l.color ?? 'ededed' }));
   }
 }

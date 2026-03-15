@@ -1,3 +1,7 @@
+/**
+ * Koa middleware that catches errors and returns structured JSON responses.
+ * Handles Zod validation errors (400) and unexpected errors (500).
+ */
 import type { Context, Next } from 'koa';
 import { ZodError } from 'zod';
 import logger from '../../../../logger.js';

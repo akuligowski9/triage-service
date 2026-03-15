@@ -34,6 +34,8 @@ describe('ProcessTriage', () => {
       findById: vi.fn().mockResolvedValue(mockEvent),
       findAll: vi.fn(),
       updateStatus: vi.fn().mockResolvedValue(undefined),
+      setIssueUrl: vi.fn(),
+      setError: vi.fn(),
     };
     const triageEngine: TriageEnginePort = {
       triage: vi.fn().mockResolvedValue(mockTriageResult),
@@ -59,6 +61,8 @@ describe('ProcessTriage', () => {
       findById: vi.fn().mockResolvedValue(null),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
+      setIssueUrl: vi.fn(),
+      setError: vi.fn(),
     };
     const triageEngine: TriageEnginePort = { triage: vi.fn() };
     const triageStore = { save: vi.fn(), findByEventId: vi.fn() };

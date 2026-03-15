@@ -44,7 +44,7 @@ const approveIssue = new ApproveIssue(
 const app = new Koa();
 app.use(errorHandler);
 app.use(bodyParser());
-const router = createRouter({ ingestEvent, listEvents, approveIssue, db, redis });
+const router = createRouter({ ingestEvent, listEvents, approveIssue, eventStore, triageStore, githubAdapter: null, targetRepo: 'test/repo', db, redis });
 app.use(router.routes());
 app.use(router.allowedMethods());
 
@@ -67,7 +67,8 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  // Clean up test data
+  // Clean up test data (triage_results first due to FK)
+  await db('triage_results').del();
   await db('events').del();
   await inspectionQueue.drain();
 });
@@ -114,9 +115,12 @@ describe('Event intake integration flow', () => {
     expect(row.message).toBe('Null pointer in PaymentService.process()');
     expect(row.status).toBe('pending');
 
-    // 4. Verify a BullMQ job was created
+    // 4. Verify a BullMQ job was created (check waiting, active, or completed)
     const waiting = await inspectionQueue.getWaiting();
-    const job = waiting.find((j) => j.data.eventId === eventId);
+    const active = await inspectionQueue.getActive();
+    const completed = await inspectionQueue.getCompleted();
+    const allJobs = [...waiting, ...active, ...completed];
+    const job = allJobs.find((j) => j.data.eventId === eventId);
     expect(job).toBeDefined();
     expect(job!.data.eventId).toBe(eventId);
   });

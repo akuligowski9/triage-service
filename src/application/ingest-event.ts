@@ -1,3 +1,6 @@
+/**
+ * Use case: accept a raw event, persist it, and enqueue it for AI triage.
+ */
 import { v4 as uuid } from 'uuid';
 import type { IntakeEvent, EventSourceType } from '../domain/models/event.js';
 import type { EventStorePort } from '../domain/ports/event-store.port.js';

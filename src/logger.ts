@@ -1,3 +1,6 @@
+/**
+ * Shared Pino logger instance. Uses pino-pretty in development.
+ */
 import pino from 'pino';
 
 const logger = pino({

@@ -1,3 +1,6 @@
+/**
+ * Domain model for AI-generated triage output attached to an intake event.
+ */
 export interface TriageResult {
   eventId: string;
   issueType: 'bug' | 'task' | 'improvement' | 'question';
@@ -7,6 +10,7 @@ export interface TriageResult {
   labels: string[];
   component?: string;
   reproductionSteps?: string[];
+  acceptanceCriteria?: string[];
   confidence: number;
   triagedAt: string;
 }

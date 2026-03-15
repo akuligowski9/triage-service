@@ -1,11 +1,27 @@
+/**
+ * REST API router. Defines all /api endpoints for event intake,
+ * listing, triage editing, dismissal, and GitHub issue approval.
+ */
 import Router from '@koa/router';
 import { z } from 'zod';
 import type { IngestEvent } from '../../../application/ingest-event.js';
 import type { ListEvents } from '../../../application/list-events.js';
 import type { ApproveIssue } from '../../../application/approve-issue.js';
 import type { EventStatus } from '../../../domain/models/event.js';
+import type { EventStorePort } from '../../../domain/ports/event-store.port.js';
+import type { PostgresTriageStore } from '../../../adapters/outbound/postgres/triage-store.adapter.js';
+import type { GitHubIssueAdapter } from '../../../adapters/outbound/github/issue-tracker.adapter.js';
 import type { Knex } from 'knex';
 import type { Redis } from 'ioredis';
+
+const triageUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  body: z.string().min(1).optional(),
+  severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+  labels: z.array(z.string()).optional(),
+  reproductionSteps: z.array(z.string()).optional(),
+  acceptanceCriteria: z.array(z.string()).optional(),
+});
 
 const eventInputSchema = z.object({
   sourceType: z.enum(['application_error', 'validation_warning', 'developer_note']),
@@ -21,6 +37,10 @@ export function createRouter(deps: {
   ingestEvent: IngestEvent;
   listEvents: ListEvents;
   approveIssue: ApproveIssue;
+  eventStore: EventStorePort;
+  triageStore: PostgresTriageStore;
+  githubAdapter: GitHubIssueAdapter | null;
+  targetRepo: string;
   db: Knex;
   redis: Redis;
 }): Router {
@@ -46,6 +66,16 @@ export function createRouter(deps: {
     const allOk = pgStatus === 'ok' && redisStatus === 'ok';
     ctx.status = allOk ? 200 : 503;
     ctx.body = { api: 'ok', postgres: pgStatus, redis: redisStatus };
+  });
+
+  // Labels from GitHub
+  router.get('/labels', async (ctx) => {
+    if (!deps.githubAdapter) {
+      ctx.body = [];
+      return;
+    }
+    const labels = await deps.githubAdapter.listLabels(deps.targetRepo);
+    ctx.body = labels;
   });
 
   // Event intake
@@ -77,6 +107,58 @@ export function createRouter(deps: {
       return;
     }
     ctx.body = event;
+  });
+
+  // Update triage result
+  router.patch('/events/:id/triage', async (ctx) => {
+    const event = await deps.listEvents.findById(ctx.params.id);
+    if (!event) {
+      ctx.status = 404;
+      ctx.body = { error: 'Event not found' };
+      return;
+    }
+    if (event.status !== 'triaged') {
+      ctx.status = 400;
+      ctx.body = { error: 'Can only edit triaged events' };
+      return;
+    }
+    const fields = triageUpdateSchema.parse(ctx.request.body);
+    await deps.triageStore.update(ctx.params.id, fields);
+    ctx.body = { id: ctx.params.id, status: 'updated' };
+  });
+
+  // Dismiss event
+  router.post('/events/:id/dismiss', async (ctx) => {
+    const event = await deps.listEvents.findById(ctx.params.id);
+    if (!event) {
+      ctx.status = 404;
+      ctx.body = { error: 'Event not found' };
+      return;
+    }
+    if (event.status === 'sent') {
+      ctx.status = 400;
+      ctx.body = { error: 'Cannot dismiss an event that was already sent' };
+      return;
+    }
+    await deps.eventStore.updateStatus(ctx.params.id, 'dismissed');
+    ctx.body = { id: ctx.params.id, status: 'dismissed' };
+  });
+
+  // Retry failed event → reset to triaged
+  router.post('/events/:id/retry', async (ctx) => {
+    const event = await deps.listEvents.findById(ctx.params.id);
+    if (!event) {
+      ctx.status = 404;
+      ctx.body = { error: 'Event not found' };
+      return;
+    }
+    if (event.status !== 'failed') {
+      ctx.status = 400;
+      ctx.body = { error: 'Can only retry failed events' };
+      return;
+    }
+    await deps.eventStore.updateStatus(ctx.params.id, 'triaged');
+    ctx.body = { id: ctx.params.id, status: 'triaged' };
   });
 
   // Approve event → create GitHub issue

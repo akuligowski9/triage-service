@@ -1,5 +1,10 @@
+/**
+ * PostgreSQL adapter for persisting and retrieving triage results.
+ * Implements TriageStorePort for hexagonal architecture compliance.
+ */
 import type { Knex } from 'knex';
 import type { TriageResult } from '../../../domain/models/triage-result.js';
+import type { TriageStorePort } from '../../../domain/ports/triage-store.port.js';
 
 interface TriageRow {
   id: string;
@@ -11,6 +16,7 @@ interface TriageRow {
   labels: string[];
   component: string | null;
   reproduction_steps: string[];
+  acceptance_criteria: string[];
   confidence: string;
   triaged_at: Date;
 }
@@ -25,12 +31,13 @@ function rowToResult(row: TriageRow): TriageResult {
     labels: row.labels,
     component: row.component ?? undefined,
     reproductionSteps: row.reproduction_steps,
+    acceptanceCriteria: row.acceptance_criteria,
     confidence: parseFloat(row.confidence),
     triagedAt: row.triaged_at.toISOString(),
   };
 }
 
-export class PostgresTriageStore {
+export class PostgresTriageStore implements TriageStorePort {
   constructor(private db: Knex) {}
 
   async save(result: TriageResult): Promise<void> {
@@ -43,6 +50,7 @@ export class PostgresTriageStore {
       labels: JSON.stringify(result.labels),
       component: result.component ?? null,
       reproduction_steps: JSON.stringify(result.reproductionSteps ?? []),
+      acceptance_criteria: JSON.stringify(result.acceptanceCriteria ?? []),
       confidence: result.confidence,
       triaged_at: result.triagedAt,
     });
@@ -51,5 +59,16 @@ export class PostgresTriageStore {
   async findByEventId(eventId: string): Promise<TriageResult | null> {
     const row = await this.db('triage_results').where({ event_id: eventId }).first();
     return row ? rowToResult(row) : null;
+  }
+
+  async update(eventId: string, fields: Partial<Pick<TriageResult, 'title' | 'body' | 'severity' | 'labels' | 'reproductionSteps' | 'acceptanceCriteria'>>): Promise<void> {
+    const update: Record<string, unknown> = {};
+    if (fields.title !== undefined) update.title = fields.title;
+    if (fields.body !== undefined) update.body = fields.body;
+    if (fields.severity !== undefined) update.severity = fields.severity;
+    if (fields.labels !== undefined) update.labels = JSON.stringify(fields.labels);
+    if (fields.reproductionSteps !== undefined) update.reproduction_steps = JSON.stringify(fields.reproductionSteps);
+    if (fields.acceptanceCriteria !== undefined) update.acceptance_criteria = JSON.stringify(fields.acceptanceCriteria);
+    await this.db('triage_results').where({ event_id: eventId }).update(update);
   }
 }

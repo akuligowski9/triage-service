@@ -2,7 +2,7 @@
 
 **Prefix:** TRG
 **Status Flow:** `Planned --> In Progress --> Done | Blocked | Archived`
-**Timeline:** Weekend build (2026-03-14 to 2026-03-16), interview Monday 2026-03-17
+**Started:** 2026-03-14
 
 ---
 
@@ -216,7 +216,7 @@ Build the `GET /api/events` endpoint that returns events with their triage resul
 
 #### Description
 
-Implement the `IssueTrackerPort` using Octokit to create real GitHub Issues. Takes a structured Issue (title, body, labels) and creates it on the configured target repository (`akuligowski9/project-bridge`). This is the real output — issues created by the demo show up on the actual project.
+Implement the `IssueTrackerPort` using Octokit to create real GitHub Issues. Takes a structured Issue (title, body, labels) and creates it on the configured target repository (`akuligowski9/project-bridge`).
 
 #### Acceptance Criteria
 
@@ -291,7 +291,7 @@ Build a minimal static HTML dashboard served by Koa at `/dashboard`. Shows the t
 
 #### Description
 
-Add `triage_client.py` to project-bridge that emits events to the triage service when pipeline errors occur. Wire 2-3 `PipelineError` catch blocks in `orchestrator.py` to call `emit_triage_event()`. Fire-and-forget with 3-second timeout — zero coupling. This makes the demo real: trigger an error in project-bridge, see it flow through the triage service, approve it, see the GitHub issue.
+Add `triage_client.py` to project-bridge that emits events to the triage service when pipeline errors occur. Wire 2-3 `PipelineError` catch blocks in `orchestrator.py` to call `emit_triage_event()`. Fire-and-forget with 3-second timeout — zero coupling.
 
 #### Acceptance Criteria
 
@@ -316,7 +316,7 @@ Add `triage_client.py` to project-bridge that emits events to the triage service
 
 #### Description
 
-Build a `GET /api/health` endpoint that checks Postgres and Redis connectivity. Returns status for each dependency. Useful for Docker healthcheck and demo credibility.
+Build a `GET /api/health` endpoint that checks Postgres and Redis connectivity. Returns status for each dependency. Used as Docker healthcheck.
 
 #### Acceptance Criteria
 
@@ -362,7 +362,7 @@ Write unit tests for the three core use cases using mock port implementations. T
 
 #### Description
 
-Write a README that explains the project, architecture decisions, setup instructions, and demo flow. Include the ASCII architecture diagram from the tech spec. This is what the interviewer will see first on GitHub.
+Write a README that explains the project, architecture decisions, setup instructions, and usage flow. Include the ASCII architecture diagram.
 
 #### Acceptance Criteria
 
@@ -389,7 +389,7 @@ Write a README that explains the project, architecture decisions, setup instruct
 
 #### Description
 
-Add pino logger throughout the application for structured JSON logging. Log at intake, queue, worker, and output boundaries. Helps with demo observability and shows production thinking.
+Add pino logger throughout the application for structured JSON logging. Log at intake, queue, worker, and output boundaries for observability.
 
 #### Acceptance Criteria
 
@@ -430,21 +430,137 @@ One integration test that exercises the full flow: POST an event, verify it's st
 
 ---
 
+### TRG-018: Dashboard Triage Workbench
+
+#### Description
+
+Extend the static HTML dashboard from a basic table into a full triage workbench. Add filter panel, expandable review/edit panels, icon-based actions (edit, approve, dismiss, view), label management from GitHub, and auto-refresh. Enables human-in-the-loop review workflow.
+
+#### Acceptance Criteria
+
+- [ ] Filter panel with dynamic dropdowns for status, source, severity, project
+- [ ] Info tooltips on column headers explaining valid values
+- [ ] SVG icon buttons for edit, approve, dismiss, and view actions
+- [ ] Expandable review panel with labels, description, STR, AC, stack trace
+- [ ] Editable form with label chips from GitHub repo labels dropdown
+- [ ] Issue link displayed for sent events
+- [ ] Auto-refresh every 10 seconds
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Enhancement
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
+### TRG-019: Triage Result Editing
+
+#### Description
+
+Allow human reviewers to edit AI-generated triage results before approving. Add PATCH endpoint for partial updates to title, description, severity, labels, reproduction steps, and acceptance criteria. Enables human-in-the-loop quality control.
+
+#### Acceptance Criteria
+
+- [ ] `PATCH /api/events/:id/triage` updates triage result fields
+- [ ] Zod validation on update payload
+- [ ] Only triaged events can be edited (400 otherwise)
+- [ ] Dashboard edit form with save/cancel actions
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
+### TRG-020: Dismiss and Retry Endpoints
+
+#### Description
+
+Add endpoints for dismissing events and retrying failed approvals. Dismiss removes events from the active queue. Retry resets failed events back to triaged status for re-approval. Completes the event lifecycle management.
+
+#### Acceptance Criteria
+
+- [ ] `POST /api/events/:id/dismiss` sets status to dismissed
+- [ ] Cannot dismiss already-sent events
+- [ ] `POST /api/events/:id/retry` resets failed events to triaged
+- [ ] Cannot retry non-failed events
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
+### TRG-021: Service Error Handling
+
+#### Description
+
+Capture and surface errors from external service calls (GitHub API). When approval fails, persist the error message on the event with `failed` status. Dashboard shows error details with a retry option.
+
+#### Acceptance Criteria
+
+- [ ] GitHub API errors caught in approve flow, error message persisted
+- [ ] Event status set to `failed` with `error_message` column populated
+- [ ] Dashboard shows error panel for failed events
+- [ ] Retry button resets to triaged
+- [ ] Unit test verifies error capture behavior
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** High
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
+### TRG-022: Hexagonal Architecture Cleanup
+
+#### Description
+
+Create missing `TriageStorePort` interface to fix hexagonal architecture gap where use cases imported the concrete `PostgresTriageStore` class. Remove dead code, unused config, and add file-level doc comments.
+
+#### Acceptance Criteria
+
+- [ ] `TriageStorePort` interface created in domain layer
+- [ ] All use cases depend on port, not concrete adapter
+- [ ] Ollama code removed (config, adapter, dependency)
+- [ ] Unused `ISSUE_TRACKER` config removed
+- [ ] File-level doc comments on all 18 source files
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** High
+- **Type:** Maintenance
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
 ## Parking Lot
 
-- **Mock Jira Adapter** — Console-log implementation of IssueTrackerPort. Proves architecture but adds no demo value. Build only if Critical–Medium items are done early.
-- **Reject Endpoint** — `POST /api/events/:id/reject` to dismiss events. Not needed for demo flow.
-- **Retry Endpoint** — `POST /api/events/:id/retry` to re-queue failed events. Not needed for demo flow.
-- **Config Validation** — Zod schema for env vars in `src/config/index.ts`. Nice for production, not critical for demo.
+- **Mock Jira Adapter** — Console-log implementation of IssueTrackerPort. Architecture supports it via the port interface.
 
 ---
 
 ## Documented Gaps
 
-- **No authentication** — API is open. Acceptable for interview demo, would add JWT/API key auth in production.
-- **No deduplication** — Same error can create multiple events. Noted as future enhancement.
-- **No pagination** — `GET /api/events` returns all events. Fine for demo scale.
-- **Single LLM provider** — Only OpenAI via LangChain. Architecture supports swapping but only one implemented.
+- **No authentication** — API is open. Would add JWT/API key middleware in production.
+- **No deduplication** — Same error can create multiple events. Future enhancement.
+- **No pagination** — `GET /api/events` returns all events. Would add cursor-based pagination at scale.
 
 ---
 
@@ -461,9 +577,14 @@ One integration test that exercises the full flow: POST an event, verify it's st
 - **TRG-009**: GitHub Issues Adapter
 - **TRG-010**: Approve Endpoint
 - **TRG-011**: Triage Dashboard
+- **TRG-012**: Project-Bridge Integration
 - **TRG-013**: Health Endpoint
 - **TRG-014**: Unit Tests
-- **TRG-012**: Project-Bridge Integration
 - **TRG-015**: README with Architecture Docs
 - **TRG-016**: Structured Logging
 - **TRG-017**: Integration Test
+- **TRG-018**: Dashboard Triage Workbench
+- **TRG-019**: Triage Result Editing
+- **TRG-020**: Dismiss and Retry Endpoints
+- **TRG-021**: Service Error Handling
+- **TRG-022**: Hexagonal Architecture Cleanup
