@@ -102,6 +102,7 @@ export function createRouter(deps: {
     ctx.status = 202;
     ctx.body = {
       id: event.id,
+      fingerprint: event.fingerprint,
       status: event.status,
       message: 'Event received and queued for triage',
     };

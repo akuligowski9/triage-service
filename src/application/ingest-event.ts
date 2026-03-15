@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid';
 import type { IntakeEvent, EventSourceType } from '../domain/models/event.js';
 import type { EventStorePort } from '../domain/ports/event-store.port.js';
 import type { TriageQueuePort } from '../domain/ports/triage-queue.port.js';
+import { buildFingerprint } from '../domain/fingerprint.js';
 
 export interface IngestEventInput {
   sourceType: EventSourceType;
@@ -23,6 +24,8 @@ export class IngestEvent {
   ) {}
 
   async execute(input: IngestEventInput): Promise<IntakeEvent> {
+    const stage = input.metadata?.stage as string | undefined;
+
     const event: IntakeEvent = {
       id: uuid(),
       sourceType: input.sourceType,
@@ -34,6 +37,12 @@ export class IngestEvent {
       timestamp: input.timestamp ?? new Date().toISOString(),
       receivedAt: new Date().toISOString(),
       status: 'pending',
+      fingerprint: buildFingerprint({
+        project: input.project,
+        sourceType: input.sourceType,
+        message: input.message,
+        stage,
+      }),
     };
 
     await this.eventStore.save(event);

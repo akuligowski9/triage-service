@@ -16,6 +16,7 @@ export interface IntakeEvent {
   timestamp: string;
   receivedAt: string;
   status: EventStatus;
+  fingerprint: string;
   issueUrl?: string;
   errorMessage?: string;
 }
