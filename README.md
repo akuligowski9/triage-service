@@ -134,7 +134,7 @@ curl -X POST http://localhost:4000/api/events \
 npm test           # Run all unit tests
 ```
 
-10 tests across 4 files: 9 unit tests covering the three core use cases (ingest, triage, approve — including error handling) with mock port implementations, plus 1 integration test with real Postgres and Redis. Proves the hexagonal architecture is testable without real infrastructure.
+11 tests across 4 files: unit tests covering the core use cases (ingest with idempotency, triage, approve — including error handling) with mock port implementations, plus 1 integration test with real Postgres and Redis. Proves the hexagonal architecture is testable without real infrastructure.
 
 ## Project Structure
 
@@ -148,6 +148,11 @@ src/
 ├── worker/          # BullMQ triage worker
 └── config/          # Env validation with Zod
 ```
+
+## Observability
+
+- **Request ID propagation**: Every request gets a correlation ID (from `X-Request-Id` header or generated). Stored in `AsyncLocalStorage`, automatically included in every Pino log line via mixin. Echoed back in the response.
+- **Intake idempotency**: Duplicate events within the same hour are deduplicated via an idempotency key (caller-supplied or derived from the payload). Prevents duplicate business processing from network retries.
 
 ## Security
 

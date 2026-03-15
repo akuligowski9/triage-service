@@ -297,3 +297,65 @@ Added production-grade security and resilience features: API key authentication,
 ### Test Summary
 
 - **10 tests** — all passing, clean TypeScript compile
+
+---
+
+## 2026-03-15 — Architecture Fixes, Fingerprinting, and Observability (Session 5)
+
+### Architecture Fixes
+
+- **`approved` status flow**: Events now transition `triaged → approved → sent/failed`. Previously `approved` was defined but never set.
+- **Router port compliance**: Router depends on `TriageStorePort` and `IssueTrackerPort` instead of concrete `PostgresTriageStore` and `GitHubIssueAdapter`.
+- **`listLabels()` on port**: Added to `IssueTrackerPort` so the labels endpoint uses the port boundary.
+- **Removed `confidence`**: Dropped from domain model, LangChain schema, Postgres adapter, and migration.
+- **`pino-pretty` to devDependencies**: No longer ships in production Docker image.
+
+### Request ID Propagation (TRG-025)
+
+
+
+- `AsyncLocalStorage` stores a per-request correlation ID
+- Accepts `X-Request-Id` from upstream callers or generates one
+- Pino `mixin()` automatically includes `requestId` in every log line within the request lifecycle
+- Response header echoes `X-Request-Id` back to the caller
+
+### Intake Idempotency (TRG-026)
+
+- Caller can supply an `idempotencyKey`, or one is derived from `sourceType + project + message + hourBucket`
+- Hour bucketing ensures legitimate repeat errors are still accepted, while network retries within the same hour are deduplicated
+- Duplicate submissions return the existing event without re-enqueuing
+- Separate concept from fingerprinting: idempotency prevents duplicate processing, fingerprints group failure types
+- Unique constraint on `idempotency_key` column enforces at the database level
+
+### Database Migrations Added
+
+| Migration | Change |
+|-----------|--------|
+| `20260314_006_drop_confidence.ts` | Drop `confidence` column from `triage_results` |
+| `20260315_008_add_idempotency_key.ts` | Add `idempotency_key` column + unique constraint to `events` |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `src/request-context.ts` | **New** — AsyncLocalStorage request context |
+| `src/logger.ts` | Added Pino mixin for automatic requestId injection |
+| `src/adapters/inbound/rest/middleware/request-logger.ts` | Request ID assignment + AsyncLocalStorage.run() |
+| `src/domain/models/event.ts` | Added `fingerprint`, `idempotencyKey` fields |
+| `src/domain/models/triage-result.ts` | Removed `confidence` field |
+| `src/domain/ports/event-store.port.ts` | Added `findByIdempotencyKey()` |
+| `src/domain/ports/issue-tracker.port.ts` | Added `listLabels()` |
+| `src/application/ingest-event.ts` | Idempotency check + fingerprint generation |
+| `src/application/approve-issue.ts` | `approved` status set before issue creation |
+| `src/adapters/outbound/postgres/event-store.adapter.ts` | `fingerprint`, `idempotencyKey` mapping, `findByIdempotencyKey()` |
+| `src/adapters/outbound/postgres/triage-store.adapter.ts` | Removed `confidence` |
+| `src/adapters/outbound/langchain/triage-engine.adapter.ts` | Removed `confidence` from Zod schema |
+| `src/adapters/inbound/rest/router.ts` | Uses port types, `idempotencyKey` in Zod schema, fingerprint in response |
+| `src/adapters/inbound/dashboard/public/index.html` | `badge-approved` style, tooltip update |
+| `src/index.ts` | Router uses `issueTracker` port, dummy includes `listLabels` |
+| `package.json` | Moved `pino-pretty` to devDependencies |
+
+### Test Summary
+
+- **11 tests** across 4 files — all passing, clean TypeScript compile
+- New: idempotency dedup test

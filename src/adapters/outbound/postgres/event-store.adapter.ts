@@ -17,7 +17,6 @@ interface EventRow {
   timestamp: Date;
   received_at: Date;
   status: string;
-  fingerprint: string;
   idempotency_key: string;
   issue_url: string | null;
   error_message: string | null;
@@ -36,7 +35,6 @@ function rowToEvent(row: EventRow): IntakeEvent {
     timestamp: row.timestamp.toISOString(),
     receivedAt: row.received_at.toISOString(),
     status: row.status as EventStatus,
-    fingerprint: row.fingerprint,
     idempotencyKey: row.idempotency_key,
     issueUrl: row.issue_url ?? undefined,
     errorMessage: row.error_message ?? undefined,
@@ -58,7 +56,6 @@ export class PostgresEventStore implements EventStorePort {
       timestamp: event.timestamp,
       received_at: event.receivedAt,
       status: event.status,
-      fingerprint: event.fingerprint,
       idempotency_key: event.idempotencyKey,
     });
   }

@@ -34,7 +34,6 @@ describe('IngestEvent', () => {
     expect(result.sourceType).toBe('application_error');
     expect(result.project).toBe('project-bridge');
     expect(result.id).toBeDefined();
-    expect(result.fingerprint).toMatch(/^[0-9a-f]{16}$/);
     expect(eventStore.save).toHaveBeenCalledOnce();
     expect(triageQueue.enqueue).toHaveBeenCalledWith(result.id);
   });

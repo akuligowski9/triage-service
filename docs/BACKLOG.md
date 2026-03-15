@@ -597,6 +597,53 @@ Add rate limiting to `POST /api/events` to prevent BullMQ queue flooding. Uses `
 
 ---
 
+### TRG-025: Request ID Propagation
+
+#### Description
+
+Add request-scoped correlation IDs using AsyncLocalStorage. Every log line within a request lifecycle automatically includes the same requestId. Accepts X-Request-Id from upstream callers for distributed tracing, generates one if absent.
+
+#### Acceptance Criteria
+
+- [ ] AsyncLocalStorage stores request context per request
+- [ ] Pino mixin injects requestId into all log lines automatically
+- [ ] Accepts `X-Request-Id` header from caller or generates UUID
+- [ ] Echoes `X-Request-Id` back in response header
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
+### TRG-026: Intake Idempotency
+
+#### Description
+
+Prevent duplicate event processing at the intake boundary. Caller can supply an `idempotencyKey`, or one is derived from the payload bucketed by hour. Duplicate submissions return the existing event. Intentionally separate from fingerprinting — idempotency prevents duplicate business processing, fingerprints group recurring failure types.
+
+#### Acceptance Criteria
+
+- [ ] Optional `idempotencyKey` accepted in POST payload
+- [ ] Derived key uses sourceType + project + message + hour bucket
+- [ ] Duplicate returns existing event without re-saving or re-enqueuing
+- [ ] Unique constraint on `idempotency_key` column
+- [ ] Unit test verifies dedup behavior
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
 ## Parking Lot
 
 - **Mock Jira Adapter** — Console-log implementation of IssueTrackerPort. Architecture supports it via the port interface.
@@ -605,7 +652,6 @@ Add rate limiting to `POST /api/events` to prevent BullMQ queue flooding. Uses `
 
 ## Documented Gaps
 
-- **No deduplication** — Same error can create multiple events. Future enhancement.
 - **No pagination** — `GET /api/events` returns all events. Would add cursor-based pagination at scale.
 
 ---
@@ -636,3 +682,5 @@ Add rate limiting to `POST /api/events` to prevent BullMQ queue flooding. Uses `
 - **TRG-022**: Hexagonal Architecture Cleanup
 - **TRG-023**: API Key Authentication Middleware
 - **TRG-024**: Rate Limiting on Event Intake
+- **TRG-025**: Request ID Propagation
+- **TRG-026**: Intake Idempotency

@@ -14,7 +14,6 @@ const mockEvent: IntakeEvent = {
   timestamp: '2026-03-14T00:00:00Z',
   receivedAt: '2026-03-14T00:00:01Z',
   status: 'pending',
-  fingerprint: 'abc123',
   idempotencyKey: 'idem-123',
 };
 
