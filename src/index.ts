@@ -25,6 +25,7 @@ import { ProcessTriage } from './application/process-triage.js';
 import { createTriageWorker } from './worker/triage.worker.js';
 import { GitHubIssueAdapter } from './adapters/outbound/github/issue-tracker.adapter.js';
 import { ApproveIssue } from './application/approve-issue.js';
+import type { IssueTrackerPort } from './domain/ports/issue-tracker.port.js';
 import { Redis as IORedis } from 'ioredis';
 import logger from './logger.js';
 
@@ -52,13 +53,16 @@ const issueTracker = config.GITHUB_TOKEN
 // Use cases
 const ingestEvent = new IngestEvent(eventStore, triageQueue);
 const listEvents = new ListEvents(eventStore, triageStore);
+// Null adapter — used when GITHUB_TOKEN is not configured
+const nullIssueTracker: IssueTrackerPort = {
+  createIssue: async () => { throw new Error('GITHUB_TOKEN not configured'); },
+  listLabels: async () => [],
+};
+
 const approveIssue = new ApproveIssue(
   eventStore,
   triageStore,
-  issueTracker ?? {
-    createIssue: async () => { throw new Error('GITHUB_TOKEN not configured'); },
-    listLabels: async () => [],
-  },
+  issueTracker ?? nullIssueTracker,
   config.TARGET_REPO,
 );
 

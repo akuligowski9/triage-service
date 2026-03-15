@@ -38,17 +38,15 @@ Additional Context: {metadata}`,
 ]);
 
 export class LangChainTriageEngine implements TriageEnginePort {
-  private chainPromise;
+  private chain;
 
   constructor(modelName?: string) {
     const model = new ChatOpenAI({ model: modelName ?? 'gpt-4o-mini', temperature: 0 });
-    const structured = model.withStructuredOutput(triageSchema);
-    this.chainPromise = Promise.resolve(prompt.pipe(structured));
+    this.chain = prompt.pipe(model.withStructuredOutput(triageSchema));
   }
 
   async triage(event: IntakeEvent): Promise<TriageResult> {
-    const chain = await this.chainPromise;
-    const result = await chain.invoke({
+    const result = await this.chain.invoke({
       project: event.project,
       sourceType: event.sourceType,
       environment: event.environment,
