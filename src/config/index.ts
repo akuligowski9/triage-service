@@ -12,6 +12,7 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   GITHUB_TOKEN: z.string().optional(),
   TARGET_REPO: z.string().default('akuligowski9/project-bridge'),
+  API_KEY: z.string().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;

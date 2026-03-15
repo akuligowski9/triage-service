@@ -308,7 +308,7 @@ Add `triage_client.py` to project-bridge that emits events to the triage service
 - **Type:** Feature
 - **Assignee:** Unassigned
 - **GitHub Issue:** No
-- **Session Notes:** Fixed Zod datetime validation to accept Python's +00:00 offset format. Hooked into github_analyzer, ai_context, and validation warning paths.
+- **Session Notes:** Fixed Zod datetime validation to accept Python's +00:00 offset format. Hooked into all 5 error paths: github_analyzer (error + warning), resume_parser, job_parser, ai_context.
 
 ---
 
@@ -550,6 +550,53 @@ Create missing `TriageStorePort` interface to fix hexagonal architecture gap whe
 
 ---
 
+### TRG-023: API Key Authentication Middleware
+
+#### Description
+
+Add optional API key authentication via Koa middleware. Uses `Authorization: Bearer <key>` header. Skips auth for health and dashboard routes. When `API_KEY` env var is unset, API remains open.
+
+#### Acceptance Criteria
+
+- [ ] Koa middleware validates `Authorization: Bearer <key>` header
+- [ ] Health (`/api/health`) and dashboard (`/dashboard`) bypass auth
+- [ ] Returns 401 with clear error message on invalid/missing key
+- [ ] When `API_KEY` is unset, all requests pass through (opt-in security)
+- [ ] Configured via `API_KEY` env var in `.env`
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
+### TRG-024: Rate Limiting on Event Intake
+
+#### Description
+
+Add rate limiting to `POST /api/events` to prevent BullMQ queue flooding. Uses `koa-ratelimit` with in-memory store, scoped per IP. Returns 429 with rate limit headers when exceeded.
+
+#### Acceptance Criteria
+
+- [ ] Rate limiter applied to `POST /api/events` only
+- [ ] 30 requests per minute per IP
+- [ ] Returns `X-RateLimit-Remaining`, `X-RateLimit-Limit`, `X-RateLimit-Reset` headers
+- [ ] Returns 429 with error message when exceeded
+
+#### Metadata
+
+- **Status:** Done
+- **Priority:** Medium
+- **Type:** Feature
+- **Assignee:** Unassigned
+- **GitHub Issue:** No
+
+---
+
 ## Parking Lot
 
 - **Mock Jira Adapter** — Console-log implementation of IssueTrackerPort. Architecture supports it via the port interface.
@@ -558,7 +605,6 @@ Create missing `TriageStorePort` interface to fix hexagonal architecture gap whe
 
 ## Documented Gaps
 
-- **No authentication** — API is open. Would add JWT/API key middleware in production.
 - **No deduplication** — Same error can create multiple events. Future enhancement.
 - **No pagination** — `GET /api/events` returns all events. Would add cursor-based pagination at scale.
 
@@ -588,3 +634,5 @@ Create missing `TriageStorePort` interface to fix hexagonal architecture gap whe
 - **TRG-020**: Dismiss and Retry Endpoints
 - **TRG-021**: Service Error Handling
 - **TRG-022**: Hexagonal Architecture Cleanup
+- **TRG-023**: API Key Authentication Middleware
+- **TRG-024**: Rate Limiting on Event Intake

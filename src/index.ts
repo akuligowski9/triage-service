@@ -19,6 +19,7 @@ import { ListEvents } from './application/list-events.js';
 import { createRouter } from './adapters/inbound/rest/router.js';
 import { errorHandler } from './adapters/inbound/rest/middleware/error-handler.js';
 import { requestLogger } from './adapters/inbound/rest/middleware/request-logger.js';
+import { createAuthMiddleware } from './adapters/inbound/rest/middleware/auth.js';
 import { LangChainTriageEngine } from './adapters/outbound/langchain/triage-engine.adapter.js';
 import { ProcessTriage } from './application/process-triage.js';
 import { createTriageWorker } from './worker/triage.worker.js';
@@ -59,10 +60,11 @@ const approveIssue = new ApproveIssue(
 );
 
 // Worker
+let worker: ReturnType<typeof createTriageWorker> | null = null;
 if (config.OPENAI_API_KEY) {
   const triageEngine = new LangChainTriageEngine();
   const processTriage = new ProcessTriage(eventStore, triageEngine, triageStore);
-  createTriageWorker(config.REDIS_URL, processTriage);
+  worker = createTriageWorker(config.REDIS_URL, processTriage, eventStore);
   logger.info('triage worker started');
 } else {
   logger.warn('OPENAI_API_KEY not set — triage worker disabled');
@@ -73,6 +75,7 @@ const app = new Koa();
 app.use(errorHandler);
 app.use(requestLogger);
 app.use(cors());
+app.use(createAuthMiddleware(config.API_KEY));
 app.use(bodyParser());
 
 const githubAdapter = issueTracker instanceof GitHubIssueAdapter ? issueTracker : null;
@@ -91,6 +94,33 @@ app.use(async (ctx, next) => {
   return next();
 });
 
-app.listen(config.PORT, () => {
+const server = app.listen(config.PORT, () => {
   logger.info(`triage-service listening on :${config.PORT}`);
+});
+
+// Graceful shutdown — drain connections before exiting
+async function shutdown(signal: string) {
+  logger.info({ signal }, 'shutdown signal received');
+
+  server.close();
+  if (worker) await worker.close();
+  await redis.quit();
+  await db.destroy();
+
+  logger.info('shutdown complete');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+// Global safety nets — log and exit on unrecoverable errors
+process.on('unhandledRejection', (reason) => {
+  logger.fatal({ err: reason }, 'unhandled promise rejection');
+  process.exit(1);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'uncaught exception');
+  process.exit(1);
 });

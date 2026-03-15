@@ -149,6 +149,13 @@ src/
 └── config/          # Env validation with Zod
 ```
 
+## Security
+
+- **API key authentication**: Optional `API_KEY` env var. When set, all API requests must include `Authorization: Bearer <key>`. Health and dashboard routes are public.
+- **Rate limiting**: `POST /api/events` is rate-limited to 30 requests/minute per IP to prevent BullMQ queue flooding. Returns 429 with standard rate limit headers.
+- **Graceful shutdown**: `SIGTERM`/`SIGINT` drain the HTTP server, worker, Redis, and Postgres connections before exit.
+- **Global safety nets**: `unhandledRejection` and `uncaughtException` handlers log fatal errors and exit cleanly.
+
 ## Cross-Language Integration
 
 The Python app (project-bridge) sends a fire-and-forget POST with a 3-second timeout:

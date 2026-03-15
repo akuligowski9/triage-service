@@ -4,6 +4,7 @@
  */
 import Router from '@koa/router';
 import { z } from 'zod';
+import ratelimit from 'koa-ratelimit';
 import type { IngestEvent } from '../../../application/ingest-event.js';
 import type { ListEvents } from '../../../application/list-events.js';
 import type { ApproveIssue } from '../../../application/approve-issue.js';
@@ -78,8 +79,23 @@ export function createRouter(deps: {
     ctx.body = labels;
   });
 
+  // Rate limiter — prevent queue flooding on event intake
+  const ingestLimiter = ratelimit({
+    driver: 'memory',
+    db: new Map(),
+    duration: 60_000,       // 1-minute window
+    max: 30,                // 30 requests per window per IP
+    id: (ctx) => ctx.ip,
+    errorMessage: 'Rate limit exceeded — try again shortly',
+    headers: {
+      remaining: 'X-RateLimit-Remaining',
+      total: 'X-RateLimit-Limit',
+      reset: 'X-RateLimit-Reset',
+    },
+  });
+
   // Event intake
-  router.post('/events', async (ctx) => {
+  router.post('/events', ingestLimiter, async (ctx) => {
     const input = eventInputSchema.parse(ctx.request.body);
     const event = await deps.ingestEvent.execute(input);
 

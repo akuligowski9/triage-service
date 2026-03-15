@@ -4,11 +4,13 @@
  */
 import { Worker } from 'bullmq';
 import type { ProcessTriage } from '../application/process-triage.js';
+import type { EventStorePort } from '../domain/ports/event-store.port.js';
 import logger from '../logger.js';
 
 export function createTriageWorker(
   redisUrl: string,
   processTriage: ProcessTriage,
+  eventStore: EventStorePort,
 ): Worker {
   const url = new URL(redisUrl);
 
@@ -37,8 +39,18 @@ export function createTriageWorker(
     },
   );
 
-  worker.on('failed', (job, err) => {
-    logger.error({ jobId: job?.id, err: err.message }, 'job failed');
+  worker.on('failed', async (job, err) => {
+    const eventId = job?.data?.eventId;
+    const attemptsUsed = job?.attemptsMade ?? 0;
+    const maxAttempts = job?.opts?.attempts ?? 3;
+
+    logger.error({ jobId: job?.id, eventId, attempt: attemptsUsed, err: err.message }, 'job failed');
+
+    // Set event to failed after final retry
+    if (eventId && attemptsUsed >= maxAttempts) {
+      await eventStore.setError(eventId, `Triage failed after ${attemptsUsed} attempts: ${err.message}`);
+      logger.warn({ eventId }, 'event marked as failed after all retries exhausted');
+    }
   });
 
   worker.on('error', (err) => {

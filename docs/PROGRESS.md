@@ -235,6 +235,65 @@ Evolved from basic table to full triage workbench:
 | `tests/unit/ingest-event.test.ts` | Added setIssueUrl/setError mocks |
 | `tests/integration/event-flow.test.ts` | FK cleanup order, job state checks, new deps |
 
+### Project-Bridge Integration Expanded
+
+Added triage hooks to all remaining error paths in `orchestrator.py`:
+
+| Stage | Type | What it catches |
+|-------|------|-----------------|
+| `github_analyzer` | `validation_warning` | No GitHub token (unauthenticated access) |
+| `github_analyzer` | `application_error` | API failures, rate limits, bad usernames, timeouts |
+| `resume_parser` | `application_error` | Malformed resume, parsing failures |
+| `job_parser` | `application_error` | Invalid job description, parsing failures |
+| `ai_context` | `application_error` | LLM provider errors, API timeouts |
+
+Verified end-to-end: triggered `validation_warning` and `application_error` from project-bridge Python code → both received by triage service → triaged by OpenAI within seconds → visible in dashboard.
+
 ### Remaining
 
 - Verify full pipeline works end-to-end with fresh database
+
+---
+
+## 2026-03-14 — Security Hardening and Production Readiness (Session 4)
+
+### Context
+
+Added production-grade security and resilience features: API key authentication, rate limiting on event intake, graceful shutdown, and global error safety nets.
+
+### Node.js Production Hardening
+
+- **Graceful shutdown**: `SIGTERM`/`SIGINT` handlers drain HTTP server, BullMQ worker, Redis, and Postgres connections before exiting
+- **Global safety nets**: `unhandledRejection` and `uncaughtException` handlers log fatal errors and exit cleanly
+- **Worker failure tracking**: Worker marks events as `failed` with error message after exhausting all BullMQ retries
+
+### API Key Authentication (TRG-023)
+
+- New Koa middleware at `src/adapters/inbound/rest/middleware/auth.ts`
+- Validates `Authorization: Bearer <key>` header against `API_KEY` env var
+- Public paths bypass auth: `/api/health`, `/dashboard`
+- Opt-in — when `API_KEY` is unset, all requests pass through
+- Middleware position: after CORS, before body parser (Koa onion model)
+
+### Rate Limiting (TRG-024)
+
+- `koa-ratelimit` applied as route-level middleware on `POST /api/events` only
+- 30 requests per minute per IP (in-memory store)
+- Returns 429 with `X-RateLimit-Remaining`, `X-RateLimit-Limit`, `X-RateLimit-Reset` headers
+- Prevents BullMQ queue flooding from misbehaving clients
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `src/index.ts` | Added auth middleware, graceful shutdown, unhandled rejection/exception handlers |
+| `src/config/index.ts` | Added `API_KEY` env var |
+| `src/adapters/inbound/rest/middleware/auth.ts` | **New** — API key auth middleware |
+| `src/adapters/inbound/rest/router.ts` | Added `koa-ratelimit` on POST /api/events |
+| `src/worker/triage.worker.ts` | Worker failure status updates via eventStore.setError() |
+| `.env.example` | Added `API_KEY` comment |
+| `package.json` | Added `koa-ratelimit`, `@types/koa-ratelimit` |
+
+### Test Summary
+
+- **10 tests** — all passing, clean TypeScript compile
