@@ -19,7 +19,6 @@ const triageSchema = z.object({
   component: z.string().optional().describe('Affected component or module'),
   reproductionSteps: z.array(z.string()).optional().describe('Steps to reproduce the issue'),
   acceptanceCriteria: z.array(z.string()).optional().describe('Acceptance criteria for resolving this issue'),
-  confidence: z.number().min(0).max(1),
 });
 
 const prompt = ChatPromptTemplate.fromMessages([

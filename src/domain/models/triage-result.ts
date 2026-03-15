@@ -11,6 +11,5 @@ export interface TriageResult {
   component?: string;
   reproductionSteps?: string[];
   acceptanceCriteria?: string[];
-  confidence: number;
   triagedAt: string;
 }

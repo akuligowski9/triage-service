@@ -23,7 +23,6 @@ const mockTriageResult: TriageResult = {
   title: 'GitHub analyzer failure on private repos',
   body: '## Bug\nThe GitHub analyzer fails when...',
   labels: ['bug', 'github'],
-  confidence: 0.85,
   triagedAt: '2026-03-14T00:00:02Z',
 };
 

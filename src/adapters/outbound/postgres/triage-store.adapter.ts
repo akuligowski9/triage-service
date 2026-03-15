@@ -17,7 +17,6 @@ interface TriageRow {
   component: string | null;
   reproduction_steps: string[];
   acceptance_criteria: string[];
-  confidence: string;
   triaged_at: Date;
 }
 
@@ -32,7 +31,6 @@ function rowToResult(row: TriageRow): TriageResult {
     component: row.component ?? undefined,
     reproductionSteps: row.reproduction_steps,
     acceptanceCriteria: row.acceptance_criteria,
-    confidence: parseFloat(row.confidence),
     triagedAt: row.triaged_at.toISOString(),
   };
 }
@@ -51,7 +49,6 @@ export class PostgresTriageStore implements TriageStorePort {
       component: result.component ?? null,
       reproduction_steps: JSON.stringify(result.reproductionSteps ?? []),
       acceptance_criteria: JSON.stringify(result.acceptanceCriteria ?? []),
-      confidence: result.confidence,
       triaged_at: result.triagedAt,
     });
   }

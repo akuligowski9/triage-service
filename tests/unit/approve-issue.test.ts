@@ -23,7 +23,6 @@ const mockTriageResult: TriageResult = {
   title: 'Fix broken thing',
   body: 'Details here',
   labels: ['bug'],
-  confidence: 0.9,
   triagedAt: '2026-03-14T00:00:02Z',
 };
 
@@ -43,6 +42,7 @@ describe('ApproveIssue', () => {
     };
     const issueTracker: IssueTrackerPort = {
       createIssue: vi.fn().mockResolvedValue({ url: 'https://github.com/test/issues/1', number: 1 }),
+      listLabels: vi.fn(),
     };
 
     const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');
@@ -56,6 +56,7 @@ describe('ApproveIssue', () => {
       labels: ['bug'],
       repository: 'owner/repo',
     });
+    expect(eventStore.updateStatus).toHaveBeenCalledWith('evt-456', 'approved');
     expect(eventStore.updateStatus).toHaveBeenCalledWith('evt-456', 'sent');
   });
 
@@ -70,7 +71,7 @@ describe('ApproveIssue', () => {
       setError: vi.fn(),
     };
     const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
-    const issueTracker: IssueTrackerPort = { createIssue: vi.fn() };
+    const issueTracker: IssueTrackerPort = { createIssue: vi.fn(), listLabels: vi.fn() };
 
     const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');
 
@@ -93,13 +94,14 @@ describe('ApproveIssue', () => {
     };
     const issueTracker: IssueTrackerPort = {
       createIssue: vi.fn().mockRejectedValue(new Error('Bad credentials')),
+      listLabels: vi.fn(),
     };
 
     const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');
 
     await expect(useCase.execute('evt-456')).rejects.toThrow('Bad credentials');
+    expect(eventStore.updateStatus).toHaveBeenCalledWith('evt-456', 'approved');
     expect(eventStore.setError).toHaveBeenCalledWith('evt-456', 'Bad credentials');
-    expect(eventStore.updateStatus).not.toHaveBeenCalled();
   });
 
   it('throws if event not found', async () => {
@@ -112,7 +114,7 @@ describe('ApproveIssue', () => {
       setError: vi.fn(),
     };
     const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
-    const issueTracker: IssueTrackerPort = { createIssue: vi.fn() };
+    const issueTracker: IssueTrackerPort = { createIssue: vi.fn(), listLabels: vi.fn() };
 
     const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');
 

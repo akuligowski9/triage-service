@@ -43,6 +43,9 @@ export class ApproveIssue {
       sections.push(`\n## Stack Trace\n\`\`\`\n${event.stackTrace}\n\`\`\``);
     }
 
+    // Mark as approved before attempting issue creation
+    await this.eventStore.updateStatus(eventId, 'approved');
+
     try {
       const result = await this.issueTracker.createIssue({
         title: triageResult.title,

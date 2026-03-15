@@ -55,7 +55,10 @@ const listEvents = new ListEvents(eventStore, triageStore);
 const approveIssue = new ApproveIssue(
   eventStore,
   triageStore,
-  issueTracker ?? { createIssue: async () => { throw new Error('GITHUB_TOKEN not configured'); } },
+  issueTracker ?? {
+    createIssue: async () => { throw new Error('GITHUB_TOKEN not configured'); },
+    listLabels: async () => [],
+  },
   config.TARGET_REPO,
 );
 
@@ -78,8 +81,7 @@ app.use(cors());
 app.use(createAuthMiddleware(config.API_KEY));
 app.use(bodyParser());
 
-const githubAdapter = issueTracker instanceof GitHubIssueAdapter ? issueTracker : null;
-const router = createRouter({ ingestEvent, listEvents, approveIssue, eventStore, triageStore, githubAdapter, targetRepo: config.TARGET_REPO, db, redis });
+const router = createRouter({ ingestEvent, listEvents, approveIssue, eventStore, triageStore, issueTracker, targetRepo: config.TARGET_REPO, db, redis });
 app.use(router.routes());
 app.use(router.allowedMethods());
 

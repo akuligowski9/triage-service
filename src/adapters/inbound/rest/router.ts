@@ -10,8 +10,8 @@ import type { ListEvents } from '../../../application/list-events.js';
 import type { ApproveIssue } from '../../../application/approve-issue.js';
 import type { EventStatus } from '../../../domain/models/event.js';
 import type { EventStorePort } from '../../../domain/ports/event-store.port.js';
-import type { PostgresTriageStore } from '../../../adapters/outbound/postgres/triage-store.adapter.js';
-import type { GitHubIssueAdapter } from '../../../adapters/outbound/github/issue-tracker.adapter.js';
+import type { TriageStorePort } from '../../../domain/ports/triage-store.port.js';
+import type { IssueTrackerPort } from '../../../domain/ports/issue-tracker.port.js';
 import type { Knex } from 'knex';
 import type { Redis } from 'ioredis';
 
@@ -39,8 +39,8 @@ export function createRouter(deps: {
   listEvents: ListEvents;
   approveIssue: ApproveIssue;
   eventStore: EventStorePort;
-  triageStore: PostgresTriageStore;
-  githubAdapter: GitHubIssueAdapter | null;
+  triageStore: TriageStorePort;
+  issueTracker: IssueTrackerPort | null;
   targetRepo: string;
   db: Knex;
   redis: Redis;
@@ -69,13 +69,13 @@ export function createRouter(deps: {
     ctx.body = { api: 'ok', postgres: pgStatus, redis: redisStatus };
   });
 
-  // Labels from GitHub
+  // Labels from issue tracker
   router.get('/labels', async (ctx) => {
-    if (!deps.githubAdapter) {
+    if (!deps.issueTracker) {
       ctx.body = [];
       return;
     }
-    const labels = await deps.githubAdapter.listLabels(deps.targetRepo);
+    const labels = await deps.issueTracker.listLabels(deps.targetRepo);
     ctx.body = labels;
   });
 
