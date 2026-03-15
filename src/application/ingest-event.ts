@@ -1,6 +1,7 @@
 /**
  * Use case: accept a raw event, persist it, and enqueue it for AI triage.
  */
+import { createHash } from 'crypto';
 import { v4 as uuid } from 'uuid';
 import type { IntakeEvent, EventSourceType } from '../domain/models/event.js';
 import type { EventStorePort } from '../domain/ports/event-store.port.js';
@@ -15,6 +16,7 @@ export interface IngestEventInput {
   stackTrace?: string;
   metadata?: Record<string, unknown>;
   timestamp?: string;
+  idempotencyKey?: string;
 }
 
 export class IngestEvent {
@@ -24,6 +26,18 @@ export class IngestEvent {
   ) {}
 
   async execute(input: IngestEventInput): Promise<IntakeEvent> {
+    // Idempotency: caller can supply a key, or we derive one from the payload.
+    // This prevents duplicate *business events*, distinct from fingerprinting
+    // which groups recurring *failure types*.
+    const idempotencyKey = input.idempotencyKey
+      ?? createHash('sha256')
+          .update([input.sourceType, input.project, input.message, input.timestamp ?? ''].join('|'))
+          .digest('hex')
+          .slice(0, 32);
+
+    const existing = await this.eventStore.findByIdempotencyKey(idempotencyKey);
+    if (existing) return existing;
+
     const stage = input.metadata?.stage as string | undefined;
 
     const event: IntakeEvent = {
@@ -43,6 +57,7 @@ export class IngestEvent {
         message: input.message,
         stage,
       }),
+      idempotencyKey,
     };
 
     await this.eventStore.save(event);

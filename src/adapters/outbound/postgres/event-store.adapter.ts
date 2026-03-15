@@ -18,6 +18,7 @@ interface EventRow {
   received_at: Date;
   status: string;
   fingerprint: string;
+  idempotency_key: string;
   issue_url: string | null;
   error_message: string | null;
   created_at: Date;
@@ -36,6 +37,7 @@ function rowToEvent(row: EventRow): IntakeEvent {
     receivedAt: row.received_at.toISOString(),
     status: row.status as EventStatus,
     fingerprint: row.fingerprint,
+    idempotencyKey: row.idempotency_key,
     issueUrl: row.issue_url ?? undefined,
     errorMessage: row.error_message ?? undefined,
   };
@@ -57,11 +59,17 @@ export class PostgresEventStore implements EventStorePort {
       received_at: event.receivedAt,
       status: event.status,
       fingerprint: event.fingerprint,
+      idempotency_key: event.idempotencyKey,
     });
   }
 
   async findById(id: string): Promise<IntakeEvent | null> {
     const row = await this.db('events').where({ id }).first();
+    return row ? rowToEvent(row) : null;
+  }
+
+  async findByIdempotencyKey(key: string): Promise<IntakeEvent | null> {
+    const row = await this.db('events').where({ idempotency_key: key }).first();
     return row ? rowToEvent(row) : null;
   }
 

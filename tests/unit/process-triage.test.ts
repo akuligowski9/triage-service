@@ -15,6 +15,7 @@ const mockEvent: IntakeEvent = {
   receivedAt: '2026-03-14T00:00:01Z',
   status: 'pending',
   fingerprint: 'abc123',
+  idempotencyKey: 'idem-123',
 };
 
 const mockTriageResult: TriageResult = {
@@ -32,6 +33,7 @@ describe('ProcessTriage', () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(mockEvent),
+      findByIdempotencyKey: vi.fn(),
       findAll: vi.fn(),
       updateStatus: vi.fn().mockResolvedValue(undefined),
       setIssueUrl: vi.fn(),
@@ -59,6 +61,7 @@ describe('ProcessTriage', () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(null),
+      findByIdempotencyKey: vi.fn(),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
       setIssueUrl: vi.fn(),

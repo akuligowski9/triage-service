@@ -15,6 +15,7 @@ const triagedEvent: IntakeEvent = {
   receivedAt: '2026-03-14T00:00:01Z',
   status: 'triaged',
   fingerprint: 'abc123',
+  idempotencyKey: 'idem-456',
 };
 
 const mockTriageResult: TriageResult = {
@@ -32,6 +33,7 @@ describe('ApproveIssue', () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(triagedEvent),
+      findByIdempotencyKey: vi.fn(),
       findAll: vi.fn(),
       updateStatus: vi.fn().mockResolvedValue(undefined),
       setIssueUrl: vi.fn().mockResolvedValue(undefined),
@@ -66,6 +68,7 @@ describe('ApproveIssue', () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(pendingEvent),
+      findByIdempotencyKey: vi.fn(),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
       setIssueUrl: vi.fn(),
@@ -83,6 +86,7 @@ describe('ApproveIssue', () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(triagedEvent),
+      findByIdempotencyKey: vi.fn(),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
       setIssueUrl: vi.fn(),
@@ -109,6 +113,7 @@ describe('ApproveIssue', () => {
     const eventStore: EventStorePort = {
       save: vi.fn(),
       findById: vi.fn().mockResolvedValue(null),
+      findByIdempotencyKey: vi.fn(),
       findAll: vi.fn(),
       updateStatus: vi.fn(),
       setIssueUrl: vi.fn(),
