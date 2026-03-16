@@ -36,7 +36,7 @@ const listEvents = new ListEvents(eventStore, triageStore);
 const approveIssue = new ApproveIssue(
   eventStore,
   triageStore,
-  { createIssue: async () => { throw new Error('Not configured'); } },
+  { createIssue: async () => { throw new Error('Not configured'); }, listLabels: async () => [] },
   'test/repo',
 );
 
@@ -44,7 +44,7 @@ const approveIssue = new ApproveIssue(
 const app = new Koa();
 app.use(errorHandler);
 app.use(bodyParser());
-const router = createRouter({ ingestEvent, listEvents, approveIssue, eventStore, triageStore, githubAdapter: null, targetRepo: 'test/repo', db, redis });
+const router = createRouter({ ingestEvent, listEvents, approveIssue, eventStore, triageStore, issueTracker: null, targetRepo: 'test/repo', db, redis });
 app.use(router.routes());
 app.use(router.allowedMethods());
 
