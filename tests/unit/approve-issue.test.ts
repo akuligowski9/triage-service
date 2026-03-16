@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ApproveIssue } from '../../src/application/approve-issue.js';
 import type { EventStorePort } from '../../src/domain/ports/event-store.port.js';
 import type { IssueTrackerPort } from '../../src/domain/ports/issue-tracker.port.js';
+import type { TriageStorePort } from '../../src/domain/ports/triage-store.port.js';
 import type { IntakeEvent } from '../../src/domain/models/event.js';
 import type { TriageResult } from '../../src/domain/models/triage-result.js';
 
@@ -38,9 +39,10 @@ describe('ApproveIssue', () => {
       setIssueUrl: vi.fn().mockResolvedValue(undefined),
       setError: vi.fn().mockResolvedValue(undefined),
     };
-    const triageStore = {
+    const triageStore: TriageStorePort = {
       save: vi.fn(),
       findByEventId: vi.fn().mockResolvedValue(mockTriageResult),
+      update: vi.fn(),
     };
     const issueTracker: IssueTrackerPort = {
       createIssue: vi.fn().mockResolvedValue({ url: 'https://github.com/test/issues/1', number: 1 }),
@@ -73,7 +75,7 @@ describe('ApproveIssue', () => {
       setIssueUrl: vi.fn(),
       setError: vi.fn(),
     };
-    const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
+    const triageStore: TriageStorePort = { save: vi.fn(), findByEventId: vi.fn(), update: vi.fn() };
     const issueTracker: IssueTrackerPort = { createIssue: vi.fn(), listLabels: vi.fn() };
 
     const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');
@@ -91,7 +93,7 @@ describe('ApproveIssue', () => {
       setIssueUrl: vi.fn(),
       setError: vi.fn().mockResolvedValue(undefined),
     };
-    const triageStore = {
+    const triageStore: TriageStorePort = {
       save: vi.fn(),
       findByEventId: vi.fn().mockResolvedValue(mockTriageResult),
       update: vi.fn(),
@@ -118,7 +120,7 @@ describe('ApproveIssue', () => {
       setIssueUrl: vi.fn(),
       setError: vi.fn(),
     };
-    const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
+    const triageStore: TriageStorePort = { save: vi.fn(), findByEventId: vi.fn(), update: vi.fn() };
     const issueTracker: IssueTrackerPort = { createIssue: vi.fn(), listLabels: vi.fn() };
 
     const useCase = new ApproveIssue(eventStore, triageStore, issueTracker, 'owner/repo');

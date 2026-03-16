@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { ProcessTriage } from '../../src/application/process-triage.js';
 import type { EventStorePort } from '../../src/domain/ports/event-store.port.js';
 import type { TriageEnginePort } from '../../src/domain/ports/triage-engine.port.js';
+import type { TriageStorePort } from '../../src/domain/ports/triage-store.port.js';
 import type { IntakeEvent } from '../../src/domain/models/event.js';
 import type { TriageResult } from '../../src/domain/models/triage-result.js';
 
@@ -41,9 +42,10 @@ describe('ProcessTriage', () => {
     const triageEngine: TriageEnginePort = {
       triage: vi.fn().mockResolvedValue(mockTriageResult),
     };
-    const triageStore = {
+    const triageStore: TriageStorePort = {
       save: vi.fn().mockResolvedValue(undefined),
       findByEventId: vi.fn(),
+      update: vi.fn(),
     };
 
     const useCase = new ProcessTriage(eventStore, triageEngine, triageStore);
@@ -67,7 +69,7 @@ describe('ProcessTriage', () => {
       setError: vi.fn(),
     };
     const triageEngine: TriageEnginePort = { triage: vi.fn() };
-    const triageStore = { save: vi.fn(), findByEventId: vi.fn() };
+    const triageStore: TriageStorePort = { save: vi.fn(), findByEventId: vi.fn(), update: vi.fn() };
 
     const useCase = new ProcessTriage(eventStore, triageEngine, triageStore);
 
