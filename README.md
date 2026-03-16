@@ -118,6 +118,22 @@ curl -X POST http://localhost:4000/api/events \
   }'
 ```
 
+## Code Flow
+
+How an event moves through the codebase, from HTTP request to GitHub issue:
+
+| Step | File | What happens |
+|------|------|--------------|
+| 1. Intake | `adapters/inbound/rest/router.ts` | Validates payload with Zod, calls use case |
+| 2. Ingest | `application/ingest-event.ts` | Idempotency check → persist to Postgres → enqueue BullMQ job |
+| 3. Dequeue | `worker/triage.worker.ts` | BullMQ picks up the job, calls use case |
+| 4. Triage | `application/process-triage.ts` | Loads event, delegates to AI engine, saves result |
+| 5. Classify | `adapters/outbound/langchain/triage-engine.adapter.ts` | Sends event to OpenAI, returns structured triage result |
+| 6. Review | `adapters/inbound/dashboard/public/index.html` | Human reviews and optionally edits the triage result |
+| 7. Approve | `application/approve-issue.ts` | Sets `approved` → creates GitHub issue → `sent` (or `failed`) |
+
+All file paths relative to `src/`. Status flow: `pending → triaged → approved → sent`.
+
 ## Demo Flow
 
 1. Trigger an error in project-bridge (or POST a sample event via curl)
